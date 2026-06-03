@@ -1,0 +1,6 @@
+{
+  "name": "TaskCandy",
+  "description": "Gerencie suas tarefas domésticas e de estudos com muito sabor e diversão! Acompanhe suas metas diárias, pontuações e suba de nível.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
