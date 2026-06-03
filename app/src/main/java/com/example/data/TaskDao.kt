@@ -50,4 +50,13 @@ interface TaskDao {
 
     @Query("DELETE FROM subtasks WHERE taskId = :taskId")
     suspend fun deleteSubTasksForTask(taskId: Long)
+
+    @Query("SELECT * FROM custom_presets ORDER BY id DESC")
+    fun getAllCustomPresets(): Flow<List<CustomPreset>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCustomPreset(preset: CustomPreset): Long
+
+    @Delete
+    suspend fun deleteCustomPreset(preset: CustomPreset)
 }

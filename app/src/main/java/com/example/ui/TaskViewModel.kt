@@ -7,6 +7,7 @@ import com.example.data.SubTask
 import com.example.data.Task
 import com.example.data.TaskRepository
 import com.example.data.TaskWithSubTasks
+import com.example.data.CustomPreset
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,6 +36,13 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
         )
 
     val allTasks: StateFlow<List<TaskWithSubTasks>> = repository.allTasksWithSubTasks
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val customPresets: StateFlow<List<CustomPreset>> = repository.allCustomPresets
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -202,6 +210,34 @@ class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
     fun deleteSubTaskDirectly(subTask: SubTask) {
         viewModelScope.launch {
             repository.deleteSubTask(subTask)
+        }
+    }
+
+    fun insertCustomPreset(
+        title: String,
+        description: String,
+        category: String,
+        difficulty: String,
+        emoji: String,
+        subtasksRaw: String
+    ) {
+        viewModelScope.launch {
+            repository.insertCustomPreset(
+                CustomPreset(
+                    title = title,
+                    description = description,
+                    category = category,
+                    difficulty = difficulty,
+                    emoji = emoji,
+                    subtasksRaw = subtasksRaw
+                )
+            )
+        }
+    }
+
+    fun deleteCustomPreset(preset: CustomPreset) {
+        viewModelScope.launch {
+            repository.deleteCustomPreset(preset)
         }
     }
 

@@ -456,6 +456,8 @@ fun HomeScreen(
     onEditTask: (TaskWithSubTasks) -> Unit
 ) {
     val context = LocalContext.current
+    val customPresets by viewModel.customPresets.collectAsStateWithLifecycle()
+    var showCreatePresetDialog by remember { mutableStateOf(false) }
     var selectedCategoryFilter by remember { mutableStateOf("TODAS") }
 
     val totalXpEver = allTasksEver.filter { it.task.isCompleted }.sumOf { it.task.xpReward }
@@ -893,6 +895,190 @@ fun HomeScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // Card to create a custom preset
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF3EDF7)),
+                        modifier = Modifier
+                            .width(200.dp)
+                            .height(160.dp)
+                            .border(1.5.dp, Color(0xFF6750A4).copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
+                        onClick = { showCreatePresetDialog = true }
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFEADDFF)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Criar Modelo",
+                                    tint = Color(0xFF21005D),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Criar Modelo",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = Color(0xFF21005D),
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = "Personalizado ✨",
+                                fontSize = 11.sp,
+                                color = Color(0xFF49454F),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    // User Custom Presets
+                    customPresets.forEach { preset ->
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFBF8FD)),
+                            modifier = Modifier
+                                .width(220.dp)
+                                .height(160.dp)
+                                .border(1.5.dp, Color(0xFFEADDFF), RoundedCornerShape(20.dp)),
+                            onClick = {
+                                val subs = if (preset.subtasksRaw.isNotBlank()) {
+                                    preset.subtasksRaw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                                } else {
+                                    emptyList()
+                                }
+                                viewModel.insertTask(
+                                    title = preset.title,
+                                    description = preset.description,
+                                    category = preset.category,
+                                    difficulty = preset.difficulty,
+                                    date = viewModel.selectedDate.value,
+                                    subtaskTitles = subs
+                                )
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "\"${preset.title}\" agendada com sucesso! 🎉",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(14.dp),
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(34.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (preset.category == "CASA") Color(0xFFF2F0F4)
+                                                    else Color(0xFFEADDFF)
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(text = preset.emoji.ifBlank { "⭐" }, fontSize = 16.sp)
+                                        }
+
+                                        IconButton(
+                                            onClick = {
+                                                viewModel.deleteCustomPreset(preset)
+                                            },
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Excluir modelo",
+                                                tint = Color(0xFFB3261E),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    Text(
+                                        text = preset.title,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF1D1B20),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+
+                                    Text(
+                                        text = preset.description,
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF49454F),
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val exp = when (preset.difficulty) {
+                                        "CANDY_EASY" -> 30
+                                        "CANDY_MEDIUM" -> 60
+                                        "CANDY_HARD" -> 100
+                                        else -> 50
+                                    }
+                                    Text(
+                                        text = "+$exp XP",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFF6750A4)
+                                    )
+
+                                    Row(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFEADDFF).copy(alpha = 0.5f))
+                                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = "Agendar",
+                                            tint = Color(0xFF21005D),
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text(
+                                            text = "Usar",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF21005D)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // System Presets
                     com.example.data.PresetLibrary.presets.forEach { preset ->
                         Card(
                             shape = RoundedCornerShape(20.dp),
@@ -1012,7 +1198,7 @@ fun HomeScreen(
                                         )
                                         Spacer(modifier = Modifier.width(2.dp))
                                         Text(
-                                            text = "Agendar",
+                                            text = "Usar",
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFF6750A4)
@@ -1121,6 +1307,13 @@ fun HomeScreen(
                 )
             }
         }
+    }
+
+    if (showCreatePresetDialog) {
+        CreatePresetDialog(
+            viewModel = viewModel,
+            onDismiss = { showCreatePresetDialog = false }
+        )
     }
 }
 
@@ -2135,6 +2328,7 @@ fun AddEditTaskDialog(
     }
     val newSubtaskTitles = remember { mutableStateListOf<String>() }
     var currentNewSubtaskText by remember { mutableStateOf("") }
+    var saveAsPreset by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = { onDismiss() }) {
         Surface(
@@ -2416,6 +2610,31 @@ fun AddEditTaskDialog(
                     )
                 }
 
+                // Preset save option for task creations
+                if (!isEditMode) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { saveAsPreset = !saveAsPreset }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = saveAsPreset,
+                            onCheckedChange = { saveAsPreset = it },
+                            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Salvar como modelo reutilizável 💾",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
                 // Dialog Buttons
                 Row(
                     modifier = Modifier
@@ -2457,6 +2676,16 @@ fun AddEditTaskDialog(
                                         date = selectedDate,
                                         subtaskTitles = newSubtaskTitles
                                     )
+                                    if (saveAsPreset) {
+                                        viewModel.insertCustomPreset(
+                                            title = title,
+                                            description = description,
+                                            category = category,
+                                            difficulty = difficulty,
+                                            emoji = "🍭",
+                                            subtasksRaw = newSubtaskTitles.joinToString(",")
+                                        )
+                                    }
                                 }
                                 onDismiss()
                             }
@@ -2515,6 +2744,218 @@ fun FlowSubtasksContainer(
                 }
                 IconButton(onClick = { onDeleteSubtask(subTask) }, modifier = Modifier.size(24.dp)) {
                     Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreatePresetDialog(
+    viewModel: TaskViewModel,
+    onDismiss: () -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("CASA") }
+    var difficulty by remember { mutableStateOf("CANDY_MEDIUM") }
+    var emoji by remember { mutableStateOf("🍭") }
+    var subtasksText by remember { mutableStateOf("") }
+
+    Dialog(onDismissRequest = { onDismiss() }) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.background,
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(vertical = 12.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text(
+                    text = "Criar Novo Modelo Doce 🍪",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 20.sp,
+                    color = Color(0xFF6750A4),
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+
+                // Title Input
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Nome do Modelo") },
+                    placeholder = { Text("Ex: Lavar o PC") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF6750A4),
+                        focusedLabelColor = Color(0xFF6750A4)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Description Input
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Descrição do Modelo") },
+                    placeholder = { Text("Ex: Retirar poeira e organizar cabos") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF6750A4)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Emoji Input
+                OutlinedTextField(
+                    value = emoji,
+                    onValueChange = { emoji = it },
+                    label = { Text("Emoji (Apenas 1 emoji)") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF6750A4)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Category selection row
+                Text(
+                    text = "Categoria:",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = Color(0xFF49454F)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    listOf("CASA" to "CASA 🏡", "ESTUDOS" to "ESTUDOS 📚").forEach { (id, desc) ->
+                        val isSel = category == id
+                        Surface(
+                            onClick = { category = id },
+                            color = if (isSel) Color(0xFFEADDFF) else Color.White,
+                            shape = CircleShape,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(40.dp)
+                                .border(
+                                    width = if (isSel) 1.5.dp else 1.dp,
+                                    color = if (isSel) Color(0xFF21005D) else Color(0xFFCAC4D0),
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Text(
+                                    text = desc,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSel) Color(0xFF21005D) else Color(0xFF49454F)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Difficulty selection row
+                Text(
+                    text = "Dificuldade:",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = Color(0xFF49454F)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("CANDY_EASY" to "Mel 🍯", "CANDY_MEDIUM" to "Marshmallow 🍡", "CANDY_HARD" to "Cacau 🍫").forEach { (id, label) ->
+                        val isSel = difficulty == id
+                        val badgeColor = when (id) {
+                            "CANDY_EASY" -> Color(0xFF34A853)
+                            "CANDY_MEDIUM" -> Color(0xFFF9AB00)
+                            else -> Color(0xFFEA4335)
+                        }
+                        val isSelColorBg = if (isSel) badgeColor.copy(alpha = 0.15f) else Color.White
+                        val isSelColorBorder = if (isSel) badgeColor else Color(0xFFCAC4D0)
+                        
+                        Surface(
+                            onClick = { difficulty = id },
+                            color = isSelColorBg,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(40.dp)
+                                .border(
+                                    width = if (isSel) 2.dp else 1.dp,
+                                    color = isSelColorBorder,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Text(
+                                    text = label,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSel) badgeColor else Color(0xFF49454F)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Subtasks input
+                OutlinedTextField(
+                    value = subtasksText,
+                    onValueChange = { subtasksText = it },
+                    label = { Text("Subtarefas (escreva separadas por vírgula)") },
+                    placeholder = { Text("Ex: Tirar do armário, Passar pano, Guardar") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF6750A4)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = { onDismiss() }) {
+                        Text("Cancelar", color = Color(0xFF6750A4))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            if (title.isNotBlank()) {
+                                viewModel.insertCustomPreset(
+                                    title = title,
+                                    description = description,
+                                    category = category,
+                                    difficulty = difficulty,
+                                    emoji = emoji,
+                                    subtasksRaw = subtasksText
+                                )
+                                onDismiss()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6750A4)),
+                        shape = CircleShape
+                    ) {
+                        Text("Salvar Modelo")
+                    }
                 }
             }
         }

@@ -66,4 +66,14 @@ class TaskRepository(private val taskDao: TaskDao) {
             )
         }
     }
+
+    val allCustomPresets: Flow<List<CustomPreset>> = taskDao.getAllCustomPresets()
+
+    suspend fun insertCustomPreset(preset: CustomPreset): Long {
+        return taskDao.insertCustomPreset(preset)
+    }
+
+    suspend fun deleteCustomPreset(preset: CustomPreset) {
+        taskDao.deleteCustomPreset(preset)
+    }
 }

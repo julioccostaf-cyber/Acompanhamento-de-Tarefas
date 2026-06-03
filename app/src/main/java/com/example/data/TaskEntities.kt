@@ -39,3 +39,15 @@ data class SubTask(
     val title: String,
     val isCompleted: Boolean = false
 )
+
+@Entity(tableName = "custom_presets")
+data class CustomPreset(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val description: String,
+    val category: String, // "CASA" or "ESTUDOS"
+    val difficulty: String, // "CANDY_EASY", "CANDY_MEDIUM", "CANDY_HARD"
+    val emoji: String,
+    val subtasksRaw: String // Comma or newline separated list of subtasks
+)
+
